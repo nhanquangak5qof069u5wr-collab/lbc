@@ -1,2 +1,2 @@
 # lbc
-李帛宸的第一个github仓库
+lbc的第一个github仓库
