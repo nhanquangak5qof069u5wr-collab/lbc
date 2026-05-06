@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>联邦学习投毒攻击动态监测与鲁棒聚合框架</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .header p {
+            color: #8892b0;
+            font-size: 1.1em;
+        }
+
+        .phase {
+            margin-bottom: 60px;
+        }
+
+        .phase-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .phase-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+        }
+
+        .phase-title h2 {
+            font-size: 1.4em;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .step-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-color), transparent);
+        }
+
+        .step-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: var(--accent-color);
+            color: #1a1a2e;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9em;
+            margin-bottom: 12px;
+        }
+
+        .step-card h3 {
+            font-size: 1.1em;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+
+        .step-card p {
+            font-size: 0.9em;
+            color: #a0aec0;
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .tech-tag {
+            display: inline-block;
+            background: rgba(0, 217, 255, 0.15);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            color: #00d9ff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            margin: 3px;
+        }
+
+        .paper-tag {
+            display: inline-block;
+            background: rgba(0, 255, 136, 0.15);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            margin: 3px;
+        }
+
+        /* Phase colors */
+        .phase-1 { --accent-color: #00d9ff; }
+        .phase-2 { --accent-color: #ff6b6b; }
+        .phase-3 { --accent-color: #ffd93d; }
+        .phase-4 { --accent-color: #6bcb77; }
+        .phase-5 { --accent-color: #9b59b6; }
+
+        .phase-1 .phase-icon { background: linear-gradient(135deg, #00d9ff, #0099cc); }
+        .phase-2 .phase-icon { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); }
+        .phase-3 .phase-icon { background: linear-gradient(135deg, #ffd93d, #f0c000); }
+        .phase-4 .phase-icon { background: linear-gradient(135deg, #6bcb77, #4CAF50); }
+        .phase-5 .phase-icon { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 40px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #8892b0;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #5a6a8a;
+            font-size: 0.85em;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8em; }
+            .steps { grid-template-columns: 1fr; }
+        }
+
+        /* Print styles */
+        @media print {
+            body { background: #fff; color: #000; }
+            .step-card { 
+                background: #f5f5f5 !important;
+                border: 1px solid #ddd !important;
+                -webkit-text-fill-color: #000 !important;
+            }
+            .step-card h3, .step-card p { color: #000 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>联邦学习投毒攻击的动态监测与鲁棒聚合框架</h1>
+            <p>技术架构流程图 · Technical Architecture</p>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <span class="legend-dot" style="background: #00d9ff;"></span>
+                任务调度与数据准备
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot" style="background: #ff6b6b;"></span>
+                攻击模块
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot" style="background: #ffd93d;"></span>
+                异常检测
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot" style="background: #6bcb77;"></span>
+                鲁棒聚合
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot" style="background: #9b59b6;"></span>
+                评估与反馈
+            </div>
+        </div>
+
+        <!-- Phase 1: 任务调度 -->
+        <div class="phase phase-1">
+            <div class="phase-title">
+                <div class="phase-icon">📋</div>
+                <h2>阶段一：任务调度与数据准备</h2>
+            </div>
+            <div class="steps">
+                <div class="step-card">
+                    <span class="step-number">1</span>
+                    <h3>上游任务调度</h3>
+                    <p>分发训练任务到各个客户端，决定每轮参与训练的客户端集合</p>
+                    <span class="tech-tag">Flower ClientManager</span>
+                    <span class="tech-tag">Python 调度器</span>
+                    <span class="paper-tag">FedAvg 2017</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">2</span>
+                    <h3>历史信誉参考</h3>
+                    <p>根据客户端的历史行为记录，维护信誉评分，动态调整权重</p>
+                    <span class="tech-tag">Reputation Scores</span>
+                    <span class="tech-tag">动态权重</span>
+                    <span class="paper-tag">FLTrust 2021</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">3</span>
+                    <h3>上下文感知与需求解析</h3>
+                    <p>将 MNIST 数据集按客户端数量切分，模拟 Non-IID 数据分布</p>
+                    <span class="tech-tag">Dirichlet 分布</span>
+                    <span class="tech-tag">数据分片</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 2: 本地训练与攻击 -->
+        <div class="phase phase-2">
+            <div class="phase-title">
+                <div class="phase-icon">⚔️</div>
+                <h2>阶段二：本地训练与攻击注入</h2>
+            </div>
+            <div class="steps">
+                <div class="step-card">
+                    <span class="step-number">4</span>
+                    <h3>本地模型训练</h3>
+                    <p>各客户端使用本地数据训练 CNN 模型，计算梯度并上传至服务器</p>
+                    <span class="tech-tag">PyTorch CNN</span>
+                    <span class="tech-tag">SGD 优化器</span>
+                    <span class="tech-tag">本地 Epoch</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">5</span>
+                    <h3>自适应差分隐私处理</h3>
+                    <p>对梯度进行 L2 范数裁剪并添加高斯噪声，保护隐私同时限制恶意影响</p>
+                    <span class="tech-tag">梯度裁剪</span>
+                    <span class="tech-tag">DP-SGD</span>
+                    <span class="paper-tag">Abadi 2016</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">6</span>
+                    <h3>梯度上传</h3>
+                    <p>将本地模型参数展平为向量，通过安全通道传输到中央服务器</p>
+                    <span class="tech-tag">梯度压缩</span>
+                    <span class="tech-tag">安全传输</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 3: 异常检测 -->
+        <div class="phase phase-3">
+            <div class="phase-title">
+                <div class="phase-icon">🔍</div>
+                <h2>阶段三：异常感知与检测</h2>
+            </div>
+            <div class="steps">
+                <div class="step-card">
+                    <span class="step-number">7</span>
+                    <h3>全局异常感知模块</h3>
+                    <p>多维度分析客户端梯度，检测范数异常、方向异常、分布偏移</p>
+                    <span class="tech-tag">余弦相似度</span>
+                    <span class="tech-tag">范数监控</span>
+                    <span class="tech-tag">Z-score</span>
+                    <span class="paper-tag">FLTrust 2021</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">8</span>
+                    <h3>异常度评估判定</h3>
+                    <p>综合多维检测结果，计算异常评分，判定客户端可信度等级</p>
+                    <span class="tech-tag">综合评分</span>
+                    <span class="tech-tag">阈值判断</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 4: 防御聚合 -->
+        <div class="phase phase-4">
+            <div class="phase-title">
+                <div class="phase-icon">🛡️</div>
+                <h2>阶段四：防御与鲁棒聚合</h2>
+            </div>
+            <div class="steps">
+                <div class="step-card">
+                    <span class="step-number">9</span>
+                    <h3>风险判定</h3>
+                    <p>结合异常检测和信誉评分，判断客户端为恶意或良性更新</p>
+                    <span class="tech-tag">风险分级</span>
+                    <span class="tech-tag">黑名单机制</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">10</span>
+                    <h3>对抗分析引擎</h3>
+                    <p>识别攻击类型（标签翻转/后门攻击），进行攻击溯源分析</p>
+                    <span class="tech-tag">触发器检测</span>
+                    <span class="tech-tag">攻击分类</span>
+                    <span class="paper-tag">Gu 2017 (BadNets)</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">11</span>
+                    <h3>鲁棒聚合算法</h3>
+                    <p>使用 Krum / Trimmed Mean / 信誉加权等算法安全聚合梯度</p>
+                    <span class="tech-tag">Krum</span>
+                    <span class="tech-tag">Trimmed Mean</span>
+                    <span class="tech-tag">信誉加权</span>
+                    <span class="paper-tag">Blanchard 2017</span>
+                    <span class="paper-tag">Yin 2018</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">12</span>
+                    <h3>自适应修复策略</h3>
+                    <p>对可疑梯度进行修正或降低权重必要时用干净数据恢复模型</p>
+                    <span class="tech-tag">梯度修正</span>
+                    <span class="tech-tag">知识蒸馏</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 5: 评估与反馈 -->
+        <div class="phase phase-5">
+            <div class="phase-title">
+                <div class="phase-icon">📊</div>
+                <h2>阶段五：评估与反馈优化</h2>
+            </div>
+            <div class="steps">
+                <div class="step-card">
+                    <span class="step-number">13</span>
+                    <h3>再验证循环</h3>
+                    <p>在验证集上测试修复后的模型效果，判断是否需要重新处理</p>
+                    <span class="tech-tag">模型验证</span>
+                    <span class="tech-tag">迭代优化</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">14</span>
+                    <h3>回传至聚合模块</h3>
+                    <p>修复后的梯度重新参与聚合，更新全局模型参数</p>
+                    <span class="tech-tag">参数同步</span>
+                    <span class="tech-tag">模型更新</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">15</span>
+                    <h3>聚合后处理</h3>
+                    <p>应用学习率，更新全局模型权重，进行一致性校验</p>
+                    <span class="tech-tag">全局更新</span>
+                    <span class="tech-tag">参数一致性</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">16</span>
+                    <h3>全局安全性校验</h3>
+                    <p>验证模型完整性和隐私保护强度，确保满足安全要求</p>
+                    <span class="tech-tag">哈希校验</span>
+                    <span class="tech-tag">隐私预算</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">17</span>
+                    <h3>性能评估</h3>
+                    <p>计算准确率、攻击成功率、隐私预算等关键指标</p>
+                    <span class="tech-tag">Accuracy</span>
+                    <span class="tech-tag">ASR</span>
+                    <span class="tech-tag">Privacy Budget</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">18</span>
+                    <h3>决策节点</h3>
+                    <p>判断是否达到收敛条件：准确率稳定/达到最大轮次/隐私预算耗尽</p>
+                    <span class="tech-tag">收敛判断</span>
+                    <span class="tech-tag">早停机制</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">19</span>
+                    <h3>知识沉淀与信誉更新</h3>
+                    <p>更新全局知识库，记录检测日志，调整客户端信誉评分</p>
+                    <span class="tech-tag">知识库</span>
+                    <span class="tech-tag">日志记录</span>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">20</span>
+                    <h3>失效模式分析</h3>
+                    <p>分析本轮失败原因，调整检测阈值和防御策略，形成反馈闭环</p>
+                    <span class="tech-tag">失败溯因</span>
+                    <span class="tech-tag">策略调整</span>
+                    <span class="paper-tag">FLAME 2021</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>联邦学习投毒攻击的动态监测与鲁棒聚合框架 · 技术架构流程图</p>
+            <p style="margin-top: 8px; color: #4a5568;">
+                核心论文：FedAvg · Krum · Trimmed Mean · FLTrust · FLAME · BadNets · DP-SGD
+            </p>
+        </div>
+    </div>
+</body>
+</html>
